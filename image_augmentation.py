@@ -4,75 +4,134 @@ import PIL
 from PIL import Image
 import numpy as np
 import time
+import torch
+import cv2
 
-ROOT_PATH = 'C:/Users/joonh/Desktop/project'
-
-IMG_PATH = 'images'
-
-img_path = f'{ROOT_PATH}/{IMG_PATH}'
-img_list = os.listdir(img_path)
-
-if not os.path.exists(f'{ROOT_PATH}/img_aug') :
-    os.mkdir(f'{ROOT_PATH}/img_aug')
-
-#print(img_list)
-for img_file in img_list :
-    print(img_file)
-    image = Image.open(f'{img_path}/{img_file}')
-    try :
-        # RGB
-        # if image.mode in ("RGBA"):
-        #     iamge = image.convert("RGB")
-        # img_name = img_file.split('.jpg')[0]
-        # print(img_name)
-
-        # r, g, b = image.split()
-        # r.save(f'{ROOT_PATH}/img_crop/{img_name}_r.jpg')
-        # g.save(f'{ROOT_PATH}/img_crop/{img_name}_g.jpg')
-        # b.save(f'{ROOT_PATH}/img_crop/{img_name}_b.jpg')
-        
-        # #회전
-        # resize_image = image.resize((480,480))
-        # if not os.path.exists(f'{ROOT_PATH}/img_aug/{img_name}_480.jpg') :
-        #         resize_image.save(f'{ROOT_PATH}/img_aug/{img_name}_480.jpg')
-        # for r in range(0, 360, 90) : 
-        #     if r == 180: 
-        #         continue
-        #     rotated_image = image.rotate(r)
-        #     # rotated_image_array = np.array(rotated_image)
-        #     # rotated_image = Image.fromarray(rotated_image_array)
-        #     if not os.path.exists(f'{ROOT_PATH}/img_aug/{img_name}_{r}.jpg') :
-        #         rotated_image.save(f'{ROOT_PATH}/img_aug/{img_name}_{r}.jpg')
-
-        # wid = image.width
-        # hig = image.height
-
-        # print(wid)
-        # print(hig)
-
-        # wid_cut = wid // 10 * 2
-        # hig_cut = hig // 10 * 2
-
-        # x1, y1, x2,y2 = wid_cut *1, hig_cut * 1, wid_cut * 3, hig_cut * 3
-        # x1, y1, x2,y2 = wid_cut *2, hig_cut * 1, wid_cut * 4, hig_cut * 3
-        # x1, y1, x2,y2 = wid_cut *1, hig_cut * 2, wid_cut * 3, hig_cut * 4   
-        # x1, y1, x2,y2 = wid_cut *2, hig_cut * 2, wid_cut * 4, hig_cut * 4
+res = torch.cuda.is_available()
 
 
-        crop_image = image.crop((x1,y1,x2,y2))
-        crop_image.save(f'{ROOT_PATH}/img_crop/{img_name}_{1+i}{1+j}{3+i}{3+j}.jpg') 
-        # time.sleep(100)
+# 디렉토리 구조 : # deeplearning/crop_dataset/[차종들]/[이미지들]
+ROOT_PATH = 'C:/Users/joonh/Desktop/mlproject/deeplearning' # yolo2.py 있는 메인 디렉토리
+ 
+IMG_PATH = 'crop_dataset' # 그안에 crop_dataset 디렉토리
 
-    except Exception as e:
-         print(e)
-         print("실패")
-         time.sleep(0.5)
-         pass
+
+# img_path = f'{ROOT_PATH}/{IMG_PATH}'
+# img_list = os.listdir(img_path)
+
+# if not os.path.exists(f'{ROOT_PATH}/img_aug') :
+#     os.mkdir(f'{ROOT_PATH}/img_aug')
+
+
+def crop(image, x1, y1, x2, y2):
+    crop_image = image.crop((x1,y1,x2,y2))
+    return crop_image
+
+
+def convert_gray(image):
+    image_gray = image.convert("L")
+    return image_gray
+
+
+def convert_black(image):
+    image_gray = image.convert("1")
+    return image_gray
     
 
+def convert_RGB(image):
+    if image.mode in ("RGBA"):
+        image_rgb = image.convert("RGB")
+        return image_rgb.split()
+    else:
+        return image
+    
+
+def resize(image, x_len, y_len):
+    resize_image = image.resize((x_len,y_len))
+    return resize_image
+
+
+def rotate(image, angle, dir):
+    if angle > 360:
+        print("Angle 360 이하")
+    if dir == 'left' or dir == 'l':
+        rotate_image = image.rotate(angle)
+    else:
+        rotate_image = image.rotate(360 - angle)
+    return rotate_image
+
+
+
+if __name__ == "__main__":
+    class_path = f'{ROOT_PATH}/{IMG_PATH}'
+    image_class = os.listdir(class_path)
+
+    for class_name in image_class:
+        print(class_name)
+
+        image_name_list = os.listdir(f"{class_path}/{class_name}")
         
-    #색 바꾸기
+        for image_name in image_name_list:
+            save_path = f"{class_path}/{class_name}/augmentaion"
 
-    #crop
+            if not os.path.exists(save_path) :
+                os.makedirs(save_path)
 
-    #
+            image_path = f"{class_path}/{class_name}/{image_name}"
+            print(image_path)
+
+            if os.path.isdir(image_path):
+                continue
+
+            # PIL ----------------------------------------------
+            try:
+                image = Image.open(image_path)
+
+                # 회색 변환
+                image_gray = convert_gray(image)
+                # image_gray.show()
+                image_gray.save(f"{save_path}/{image_name}_gray.jpg")
+
+                # RGB 변환
+                image_red, image_green, image_blue = convert_RGB(image)
+                # image_red.show()
+                image_red.save(f"{save_path}/{image_name}_red.jpg")
+                # image_green.show()
+                image_green.save(f"{save_path}/{image_name}_green.jpg")
+                # image_blue.show()
+                image_blue.save(f"{save_path}/{image_name}_blue.jpg")
+
+                # 흑백? 비슷하게 변환
+                image_black = convert_black(image)
+                # image_black.show()
+                image_black.save(f"{save_path}/{image_name}_black.jpg")
+
+                # 회전, dir이 'left'거나 'l'이면 왼쪽으로 회전 아니면 우측회전
+                angle = 90
+                rotate_image = rotate(image,angle=angle, dir='r')
+                rotate_image.show()
+                rotate_image.save(f"{save_path}/{image_name}_{angle}.jpg")
+            except Exception as e:
+                print(e)
+                pass
+
+
+            # CV2 ------------------------------------------------------------
+            try:
+                # 뭔가 테두리만 추출하는거? 써먹을 수 있을진 모르겠음
+                cv_image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+                print(cv_image)
+                threshold1 = 0
+                threshold2 = 360
+                edge_img = cv2.Canny(cv_image, threshold1, threshold2)
+                cv2.imwrite('./test.jpg', edge_img)
+                time.sleep(1000)
+
+            except Exception as e:
+                print(e)
+                pass
+            # pass
+            
+            
+
+    
