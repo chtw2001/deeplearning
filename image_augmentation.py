@@ -83,49 +83,59 @@ if __name__ == "__main__":
             if os.path.isdir(image_path):
                 continue
 
-            # PIL ----------------------------------------------
-            try:
-                image = Image.open(image_path)
+            # # PIL ----------------------------------------------
+            # try:
+            #     image = Image.open(image_path)
 
-                # 회색 변환
-                image_gray = convert_gray(image)
-                # image_gray.show()
-                image_gray.save(f"{save_path}/{image_name}_gray.jpg")
+            #     # 회색 변환
+            #     image_gray = convert_gray(image)
+            #     # image_gray.show()
+            #     image_gray.save(f"{save_path}/{image_name}_gray.jpg")
 
-                # RGB 변환
-                image_red, image_green, image_blue = convert_RGB(image)
-                # image_red.show()
-                image_red.save(f"{save_path}/{image_name}_red.jpg")
-                # image_green.show()
-                image_green.save(f"{save_path}/{image_name}_green.jpg")
-                # image_blue.show()
-                image_blue.save(f"{save_path}/{image_name}_blue.jpg")
+            #     # RGB 변환
+            #     image_red, image_green, image_blue = convert_RGB(image)
+            #     # image_red.show()
+            #     image_red.save(f"{save_path}/{image_name}_red.jpg")
+            #     # image_green.show()
+            #     image_green.save(f"{save_path}/{image_name}_green.jpg")
+            #     # image_blue.show()
+            #     image_blue.save(f"{save_path}/{image_name}_blue.jpg")
 
-                # 흑백? 비슷하게 변환
-                image_black = convert_black(image)
-                # image_black.show()
-                image_black.save(f"{save_path}/{image_name}_black.jpg")
+            #     # 흑백? 비슷하게 변환
+            #     image_black = convert_black(image)
+            #     # image_black.show()
+            #     image_black.save(f"{save_path}/{image_name}_black.jpg")
 
-                # 회전, dir이 'left'거나 'l'이면 왼쪽으로 회전 아니면 우측회전
-                angle = 90
-                rotate_image = rotate(image,angle=angle, dir='r')
-                rotate_image.show()
-                rotate_image.save(f"{save_path}/{image_name}_{angle}.jpg")
-            except Exception as e:
-                print(e)
-                pass
+            #     # 회전, dir이 'left'거나 'l'이면 왼쪽으로 회전 아니면 우측회전
+            #     angle = 90
+            #     rotate_image = rotate(image,angle=angle, dir='r')
+            #     rotate_image.show()
+            #     rotate_image.save(f"{save_path}/{image_name}_{angle}.jpg")
+            # except Exception as e:
+            #     print(e)
+            #     pass
 
 
             # CV2 ------------------------------------------------------------
             try:
                 # 뭔가 테두리만 추출하는거? 써먹을 수 있을진 모르겠음
                 cv_image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
-                print(cv_image)
-                threshold1 = 0
-                threshold2 = 360
-                edge_img = cv2.Canny(cv_image, threshold1, threshold2)
-                cv2.imwrite('./test.jpg', edge_img)
-                time.sleep(1000)
+                cv2.imwrite(f"{save_path}/{image_name}_gray.jpg", cv_image)
+
+                # 엣지 머시기
+                # threshold1 = 0
+                # threshold2 = 360
+                # edge_img = cv2.Canny(cv_image, threshold1, threshold2)
+                # cv2.imwrite('./test.jpg', edge_img)
+                
+                # 뿌옇게 만들기
+                # gaussian_img = cv2.GaussianBlur(cv_image, (3,3), 0)
+                # cv2.imwrite(f"{save_path}/{image_name}_gaussian.jpg", gaussian_img)
+                
+                # # 이미지 뭉게기?
+                # median_img = cv2.medianBlur(cv_image, 11)
+                # cv2.imwrite(f"{save_path}/{image_name}_median.jpg", median_img)
+                
 
             except Exception as e:
                 print(e)
