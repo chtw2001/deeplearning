@@ -2,3 +2,4 @@ dataset/
 mlenv/
 crop_dataset/
 zip_files/
+./Pipfile
