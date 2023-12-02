@@ -4,8 +4,8 @@ from PIL import Image
 import json
 
 # 이미지 폴더와 라벨 폴더 경로 설정
-image_folder_path = 'C:/Users/nam02/Desktop/대학/3학년 2학기/머신러닝/프로젝트/deeplearning/crop_dataset/car_image'
-label_folder_path = 'C:/Users/nam02/Desktop/대학/3학년 2학기/머신러닝/프로젝트/deeplearning/crop_dataset/traning_croped_car_label'
+image_folder_path = '/Users/chtw2001/Downloads/car'
+label_folder_path = '/Users/chtw2001/Downloads/training_croped_car_label'
 
 # 이미지 파일 목록 가져오기
 image_files = os.listdir(image_folder_path)
