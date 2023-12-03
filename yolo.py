@@ -5,10 +5,11 @@ import os
 from PIL import Image
 import time
 # image_list = os.listdir(os.path.join("/Users/chtw2001/Downloads/제네시스G80_2021/2021_검정_트림A"))
-SAVE_PATH = "/Users/chtw2001/Downloads/제네시스_G80/"
+SAVE_PATH = "/Users/chtw2001/Downloads/validation_croped_car/"
+car_category = {'bicycle', 'motorcycle', 'bus', 'truck', 'car'}
 
-
-def run_imgage_custom(img_path, indivisual_path):
+def run_imgage_custom(img_path, indivisual_path, category):
+    global car_category
     global SAVE_PATH
     # Load YOLOv8 model
     try:
@@ -28,15 +29,19 @@ def run_imgage_custom(img_path, indivisual_path):
         largest_bbox = bndboxs[largest_bbox_index]
         xmin, ymin, xmax, ymax = map(int, largest_bbox[:4])
 
+        if names[int(largest_bbox[5])] not in car_category or (xmax - xmin) * (ymax - ymin) < 40000: # 박스 사이즈, 차량 분류 완료
+            print("Not a car or bounding box too small. Skipping...")
+            return
+        
         # Draw the largest bounding box on the image
         img_array = results[0].orig_img.copy()
-        cv2.rectangle(img_array, (xmin, ymin), (xmax, ymax), (0, 255, 0), 2)
+        # cv2.rectangle(img_array, (xmin, ymin), (xmax, ymax), (0, 255, 0), 2)
         
         # Display and save the annotated image
-        cv2.imshow('Car Detection', img_array)
-        cv2.waitKey(0)
-        cv2.imwrite("test.png", img_array)
-        quit()
+        # cv2.imshow('Car Detection', img_array)
+        # cv2.waitKey(0)
+        # cv2.imwrite("test.png", img_array)
+        
         # Print the coordinates of the largest bounding box
         # print(f"Largest Car Bounding Box Coordinates: {xmin}, {ymin}, {xmax}, {ymax}")  
         
@@ -45,21 +50,25 @@ def run_imgage_custom(img_path, indivisual_path):
     except:
         return
     
-    # try:
-    #     crop_image = image.crop((xmin,ymin,xmax,ymax))
-    #     crop_image.save(SAVE_PATH + indivisual_path) 
-    #     print('image: ' + SAVE_PATH + indivisual_path)
-    #     # time.sleep(100)
+    try:
+        crop_image = image.crop((xmin,ymin,xmax,ymax))
+        path = SAVE_PATH + category + '/'
+        if not os.path.exists(path) :
+            os.mkdir(path)
+        path += indivisual_path
+        crop_image.save(path) 
+        # print('image: ' + SAVE_PATH + indivisual_path)
+        # time.sleep(100)
 
-    # except Exception as e:
-    #      print(e)
-    #      print("실패")
-    #      time.sleep(0.5)
-    #      pass 
+    except Exception as e:
+        print(e)
+        print("실패")
+        time.sleep(0.5)
+        pass 
     
     
 if __name__ == '__main__':
-    big_path = "/Users/chtw2001/Downloads/car"
+    big_path = "/Users/chtw2001/Downloads/validation"
     midium_category = os.listdir(os.path.join(big_path))
     
     for small_category in midium_category:
@@ -77,8 +86,9 @@ if __name__ == '__main__':
                 if car == '.DS_Store':
                     continue
                 indivisual_path = car_path + '/' + car
-                run_imgage_custom(indivisual_path, car)
-            quit()
+                run_imgage_custom(indivisual_path, car, small_category)
+
+
             # a = input()
             # if a == 'y':
             #     continue
