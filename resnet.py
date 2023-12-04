@@ -41,6 +41,7 @@ model.fit(
     epochs=10,
     validation_split=0.2  # 데이터를 학습 및 검증 세트로 나누세요.
 )
+model.save("my_model.h5")
 
 # 모델 평가
 test_datagen = ImageDataGenerator(
