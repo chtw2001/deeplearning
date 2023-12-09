@@ -11,7 +11,7 @@ from keras.applications.resnet import ResNet50, ResNet152
 from keras.applications.resnet_v2 import ResNet50V2, ResNet152V2
 from keras.applications.inception_resnet_v2 import InceptionResNetV2
 from keras.applications.nasnet import NASNetLarge 
-from keras.layers import Conv2D, Dense
+from keras.layers import Conv2D, Dense, Dropout
 from keras.preprocessing.image import ImageDataGenerator
 from keras.callbacks import ModelCheckpoint
 # from keras.utils.mul
@@ -29,6 +29,7 @@ VAL_PATH=f"{ROOT_PATH}/validation"
 
 maxtirx_n=224
 
+batch_size=32
 
 class Import_data:
     def __init__(self, train_path, val_path):
@@ -50,22 +51,22 @@ class Import_data:
         train_datagen = ImageDataGenerator(rescale=1. / 255,
                                         #    featurewise_center=True,
                                         #    featurewise_std_normalization=True,
-                                           zoom_range=0.2,
-                                           channel_shift_range=0.1,
-                                           rotation_range=20,
-                                           width_shift_range=0.2,
-                                           height_shift_range=0.2,
-                                           horizontal_flip=True
-                                           )
+                                        zoom_range=0.2,
+                                        channel_shift_range=0.1,
+                                        rotation_range=20,
+                                        width_shift_range=0.2,
+                                        height_shift_range=0.2,
+                                        horizontal_flip=True
+                                        )
         train_generator = train_datagen.flow_from_directory(
             self.train_path,
             target_size=(maxtirx_n, maxtirx_n),
-            batch_size=32
+            batch_size=batch_size
         )
         val_generator = train_datagen.flow_from_directory(
             self.test_path,
             target_size=(maxtirx_n, maxtirx_n),
-            batch_size=32
+            batch_size=batch_size
         )
 
         # numpy_data=self.load_images_from_folder(
@@ -112,7 +113,10 @@ class Load_model:
         network = ResNet152V2(include_top=False, weights='imagenet', input_tensor=None, input_shape=(maxtirx_n, maxtirx_n, 3),
                               pooling='avg')
         return network
-    
+    def nasnet_large(self):
+        network = NASNetLarge(include_top=False, weights='imagenet',input_shape=(maxtirx_n, maxtirx_n, 3),
+                              pooling='avg')
+        return network
 
     def build_network(self):
         if self.model_name == 'resnet_v1_50':
@@ -125,10 +129,14 @@ class Load_model:
             network = self.resnet_v2_152()
         elif self.model_name == 'inception_v4':
             network = self.inception_v4()
+        elif self.model_name == 'nasnet_large':
+            network = self.nasnet_large()
+            
             
         model = Sequential()
         model.add(network)
         model.add(Dense(1024, activation='relu'))
+        model.add(Dropout(0.5))
         model.add(Dense(self.num_class, activation='softmax'))
         model.summary()
 
@@ -146,14 +154,14 @@ class Fine_tunning:
         self.val_path = val_path
 
     def training(self, lr):
-        callback_loss = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=10)
+        callback_loss = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5)
         #callback_acc = tf.keras.callbacks.EarlyStopping(monitor='val_acc', patience=3)
         data_name = self.train_path.split('/')
         data_name = data_name[len(data_name)-2]
         # optimizer = tf.keras.optimizers.SGD(learning_rate=0.001, decay=1e-5, momentum=0.999, nesterov=True)
         optimizer = tf.keras.optimizers.Adam(learning_rate=lr)
         model = self.load_model.build_network()
-        save_folder = './model_saved/' + data_name + '/' + self.model_name + '_' + str(self.epoch) + '_' + str(lr) + '/'
+        save_folder = './model_saved/' + data_name + '/' + "AugImage_" + self.model_name + '_' + str(self.epoch) + '_' + str(lr) + '/'
         if not os.path.exists(save_folder):
             os.makedirs(save_folder)
         check_point = ModelCheckpoint(save_folder + 'model-{epoch:03d}-{acc:03f}-{val_acc:03f}.h5', verbose=1,
@@ -171,7 +179,7 @@ class Fine_tunning:
                 epochs=self.epoch,
                 validation_data=self.val_data,
                 validation_steps=self.val_data.samples / self.val_data.batch_size,
-                callbacks=[check_point],
+                callbacks=[check_point, callback_loss],
                 verbose=1)
         # else:
         #     with tf.device('/cpu:0'):
@@ -194,7 +202,7 @@ class Fine_tunning:
     def save_accuracy(self, history, lr):
         data_name = self.train_path.split('/')
         data_name = data_name[len(data_name)-2]
-        save_folder = './model_saved/' + data_name + '/' + self.model_name + '_' + str(self.epoch) + '_' + str(lr) + '/'
+        save_folder = './model_saved/' + data_name + '/' + "AugImage_" + self.model_name + '_' + str(self.epoch) + '_' + str(lr) + '/'
         acc = history.history['acc']
         val_acc = history.history['val_acc']
         loss = history.history['loss']
@@ -247,11 +255,16 @@ class Fine_tunning:
 
 
 def main(save_folder, train_path, val_path):
-    model_names=['resnet_v2_50', "resnet_v2_152", 'inception_v4']
+    # model_names=['resnet_v2_50', "resnet_v2_152", 'inception_v4']
     # model_names=["resnet_v1_50", 'resnet_v1_152' ,]
-    epoches=[50]
-    lrs=[0.01, 0.001, 0.0001]
+    model_names=['inception_v4', 'resnet_v2_152', 'nasnet_large']
+    epoches=[100]
+    lrs=[0.0001]
     for model_name in model_names:
+        if model_name == 'nasnet_large':
+            global batch_size
+            batch_size=16
+            
         for epoch in epoches: 
             for lr in lrs:
                 fine_tunning = Fine_tunning(train_path=train_path,
